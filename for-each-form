@@ -1,0 +1,27 @@
+#!/bin/bash
+set -e
+
+ITERATOR="$1"
+if [ -x "$ITERATOR" ]; then
+  ITERATOR=$(readlink -f "$ITERATOR")
+fi
+
+SCRIPTS=$(pwd)
+
+TMPDIR=$(mktemp -d)
+trap '{ cd ; rm -rf $TMPDIR; exit 255; }' SIGINT EXIT
+cd "$TMPDIR"
+
+for form in $("$SCRIPTS/list-forms"); do
+  (
+    git clone "git@github.com:rxnda/$form" "$TMPDIR/$form" &>/dev/null
+    cd "$TMPDIR/$form"
+    git submodule update --init --recursive &>/dev/null
+    echo "$form"
+    if [ -x "$ITERATOR" ]; then
+      "$ITERATOR"
+    else
+      bash -c "$ITERATOR"
+    fi
+  )
+done
